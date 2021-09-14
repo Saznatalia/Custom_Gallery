@@ -3,8 +3,10 @@ package com.example.a21005371_assignment_2;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -18,6 +20,8 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -49,13 +53,12 @@ public class ImageAdapter extends BaseAdapter {
         return mImgIds.length;
     }
 
-    // I don't use this thus default implementation
     @Override
     public Object getItem(int position) {
-        return position;
+        return mImgIds[position];
     }
 
-    // I don't use this thus default implementation
+
     @Override
     public long getItemId(int position) {
         return position;
@@ -112,6 +115,9 @@ public class ImageAdapter extends BaseAdapter {
 //                    int imageWidth = options.outWidth;
 //                    String imageType = options.outMimeType;
 //                    bmp = decodeSampledBitmapFromResource(mContext.getResources(), mImgIds[i], 200, 200);
+//                    bmp = mContext.getContentResolver().load(Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, String.valueOf(mImgIds[i])));
+
+
                     if (Build.VERSION.SDK_INT < 29) {
                         bmp = MediaStore.Images.Thumbnails.getThumbnail(mContext.getContentResolver(),
                                 mImgIds[i], MediaStore.Images.Thumbnails.MICRO_KIND, null);
@@ -137,6 +143,18 @@ public class ImageAdapter extends BaseAdapter {
             }
         }.execute(vh);
         return convertView;
+    }
+
+    public static int getOrientation(Context context, Uri photoUri) {
+        Cursor cursor = context.getContentResolver().query(photoUri,
+                new String[] { MediaStore.Images.ImageColumns.ORIENTATION }, null, null, null);
+
+        if (cursor.getCount() != 1) {
+            return -1;
+        }
+
+        cursor.moveToFirst();
+        return cursor.getInt(0);
     }
 
     public static int calculateInSampleSize(BitmapFactory.Options options,
@@ -177,4 +195,5 @@ public class ImageAdapter extends BaseAdapter {
         options.inJustDecodeBounds = false;
         return BitmapFactory.decodeResource(res, resId, options);
     }
+
 }
