@@ -5,6 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:clipChildren="true"
+    android:background="@color/dark_grey"
     tools:context=".MainActivity">
 
     <GridView

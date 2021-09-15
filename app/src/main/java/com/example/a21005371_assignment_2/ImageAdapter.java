@@ -2,10 +2,8 @@ package com.example.a21005371_assignment_2;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.res.Resources;
-import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -19,9 +17,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -32,12 +28,14 @@ public class ImageAdapter extends BaseAdapter {
     private Context mContext;
     private int[] mImgIds;
     private LayoutInflater mInflater;
+    private String[] mImgPaths;
     private ExecutorService mExecutor = Executors.newFixedThreadPool(4);
 
     // Constructor
-    public ImageAdapter(Context appContext, int[] images) {
+    public ImageAdapter(Context appContext, int[] ids, String[] paths) {
         this.mContext = appContext;
-        this.mImgIds = images;
+        this.mImgIds = ids;
+        this.mImgPaths = paths;
         this.mInflater = (LayoutInflater.from(appContext));
     }
 
@@ -106,24 +104,15 @@ public class ImageAdapter extends BaseAdapter {
                     if (vh.position != i) {
                         return null;
                     }
-                    // otherwise, decode the jpeg into a bitmap
-//                    BitmapFactory.Options options = new BitmapFactory.Options();
-//                    options.inJustDecodeBounds = true;
-//                    bmp = BitmapFactory.decodeResource(mContext.getResources(),
-//                            mImgIds[i], options);
-//                    int imageHeight = options.outHeight;
-//                    int imageWidth = options.outWidth;
-//                    String imageType = options.outMimeType;
-//                    bmp = decodeSampledBitmapFromResource(mContext.getResources(), mImgIds[i], 200, 200);
-//                    bmp = mContext.getContentResolver().load(Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, String.valueOf(mImgIds[i])));
-
-
+                    // otherwise load thumbnails
                     if (Build.VERSION.SDK_INT < 29) {
                         bmp = MediaStore.Images.Thumbnails.getThumbnail(mContext.getContentResolver(),
                                 mImgIds[i], MediaStore.Images.Thumbnails.MICRO_KIND, null);
+                        bmp = modifyOrientation(bmp, mImgPaths[i]);
                     } else {
                         bmp = mContext.getContentResolver().loadThumbnail(Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                                 String.valueOf(mImgIds[i])), Size.parseSize("200*+200"), null);
+                        bmp = modifyOrientation(bmp, mImgPaths[i]);
                     }
 
                 } catch (Exception e) {
@@ -145,55 +134,40 @@ public class ImageAdapter extends BaseAdapter {
         return convertView;
     }
 
-    public static int getOrientation(Context context, Uri photoUri) {
-        Cursor cursor = context.getContentResolver().query(photoUri,
-                new String[] { MediaStore.Images.ImageColumns.ORIENTATION }, null, null, null);
+    public static Bitmap modifyOrientation(Bitmap bitmap, String image_absolute_path) throws IOException {
+        ExifInterface ei = new ExifInterface(image_absolute_path);
+        int orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
 
-        if (cursor.getCount() != 1) {
-            return -1;
+        switch (orientation) {
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                return rotate(bitmap, 90);
+
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                return rotate(bitmap, 180);
+
+            case ExifInterface.ORIENTATION_ROTATE_270:
+                return rotate(bitmap, 270);
+
+            case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:
+                return flip(bitmap, true, false);
+
+            case ExifInterface.ORIENTATION_FLIP_VERTICAL:
+                return flip(bitmap, false, true);
+
+            default:
+                return bitmap;
         }
-
-        cursor.moveToFirst();
-        return cursor.getInt(0);
     }
 
-    public static int calculateInSampleSize(BitmapFactory.Options options,
-                                            int reqWidth, int reqHeight) {
-        // Raw height and width of image
-        final int height = options.outHeight;
-        final int width = options.outWidth;
-        int inSampleSize = 1;
-
-        if (height > reqHeight || width > reqWidth) {
-
-            final int halfHeight = height / 2;
-            final int halfWidth = width / 2;
-
-            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
-            // height and width larger than the requested height and width.
-            while ((halfHeight / inSampleSize) >= reqHeight
-                    && (halfWidth / inSampleSize) >= reqWidth) {
-                inSampleSize *= 2;
-            }
-        }
-
-        return inSampleSize;
+    public static Bitmap rotate(Bitmap bitmap, float degrees) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(degrees);
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
     }
 
-    public static Bitmap decodeSampledBitmapFromResource(Resources res, int resId,
-                                                         int reqWidth, int reqHeight) {
-
-        // First decode with inJustDecodeBounds=true to check dimensions
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeResource(res, resId, options);
-
-        // Calculate inSampleSize
-        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
-
-        // Decode bitmap with inSampleSize set
-        options.inJustDecodeBounds = false;
-        return BitmapFactory.decodeResource(res, resId, options);
+    public static Bitmap flip(Bitmap bitmap, boolean horizontal, boolean vertical) {
+        Matrix matrix = new Matrix();
+        matrix.preScale(horizontal ? -1 : 1, vertical ? -1 : 1);
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
     }
-
 }
