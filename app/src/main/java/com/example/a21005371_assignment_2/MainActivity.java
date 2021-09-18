@@ -9,17 +9,10 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.Matrix;
-import android.media.ExifInterface;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
-import android.view.ScaleGestureDetector;
 import android.widget.GridView;
-
-import java.io.IOException;
-
 
 public class MainActivity extends AppCompatActivity {
     private int[] mImgIds;
@@ -31,8 +24,8 @@ public class MainActivity extends AppCompatActivity {
 
     void init() {
 
-        // get images
-        final String[] columns = { MediaStore.Images.Media._ID, MediaStore.Images.Media.ORIENTATION, MediaStore.Images.Media.DATA };
+        // Get images and their ids & paths
+        final String[] columns = {MediaStore.Images.Media._ID, MediaStore.Images.Media.ORIENTATION, MediaStore.Images.Media.DATA};
         final String orderBy = MediaStore.Images.ImageColumns.DATE_MODIFIED + " DESC";
         mCursor = getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, columns, null, null, orderBy);
         this.mImgIds = getImageIDs(mCursor);
@@ -42,19 +35,19 @@ public class MainActivity extends AppCompatActivity {
         ImageAdapter imgAdapter = new ImageAdapter(getApplicationContext(), mImgIds, mImgPaths);
         mGrid.setAdapter(imgAdapter);
 
-        // OnClick
+        // OnClick start a new activity
         mGrid.setOnItemClickListener((parent, view, position, id) -> {
             mCursor.moveToPosition(position);
             String imgPath = mCursor.getString(mCursor.getColumnIndex(MediaStore.Images.Media.DATA));
             Log.i("Image's id: ", String.valueOf(mImgIds[position]));
-            // set an Intent to Another Activity
+
+            // Set an Intent to Another Activity
             Intent intent = new Intent(MainActivity.this, SecondActivity.class);
             intent.putExtra("path", imgPath); // put image path data in Intent
             startActivity(intent); // start Intent
         });
     }
 
-    @NonNull
     private int[] getImageIDs(Cursor cursor) {
         int image_column_index = cursor.getColumnIndex(MediaStore.Images.Media._ID);
         int[] ids = new int[cursor.getCount()];
@@ -85,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
             // If not, request the permission
-            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
         } else {
             init();
         }
@@ -94,18 +87,18 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onPause() {
         super.onPause();
-        // save the list position
+        // Save the last position
         mPosition = mGrid.getFirstVisiblePosition();
-        // close the cursor (will be opened again in init() during onResume())
+        // Close the cursor (will be opened again in init() during onResume())
         mCursor.close();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // re-init in case things have changed
+        // Re-init in case things have changed
         init();
-        // set the list position
+        // Set the last position
         mGrid.setSelection(mPosition);
     }
 
