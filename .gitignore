@@ -1,4 +1,5 @@
 *.iml
+*.jpg
 .gradle
 /local.properties
 /.idea/caches
