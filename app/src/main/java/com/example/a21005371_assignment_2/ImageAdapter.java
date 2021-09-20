@@ -6,8 +6,13 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import androidx.exifinterface.media.ExifInterface;
+
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
+import android.provider.MediaStore;
 import android.util.Log;
+import android.util.Size;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -104,16 +109,16 @@ public class ImageAdapter extends BaseAdapter {
                     if (vh.position != i) {
                         return null;
                     }
-                    bmp = getBitmap(mImgPaths[i], 160, 160);
-/*                    THIS COMMENTED CODE WORKS FASTER
-                    if (Build.VERSION.SDK_INT < 29) {
-                        bmp = MediaStore.Images.Thumbnails.getThumbnail(mContext.getContentResolver(),
-                                mImgIds[i], MediaStore.Images.Thumbnails.MICRO_KIND, null);
-                    } else {
-                        bmp = mContext.getContentResolver().loadThumbnail(Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                                String.valueOf(mImgIds[i])), Size.parseSize("200*+200"), null);
-                    }
-                    bmp = modifyOrientation(bmp, mImgPaths[i]); */
+                    bmp = getBitmap(mImgPaths[i], 200, 200);
+//                   THIS COMMENTED CODE WORKS FASTER
+//                    if (Build.VERSION.SDK_INT < 29) {
+//                        bmp = MediaStore.Images.Thumbnails.getThumbnail(mContext.getContentResolver(),
+//                                mImgIds[i], MediaStore.Images.Thumbnails.MICRO_KIND, null);
+//                    } else {
+//                        bmp = mContext.getContentResolver().loadThumbnail(Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+//                                String.valueOf(mImgIds[i])), Size.parseSize("200*+200"), null);
+//                    }
+
                 } catch (Exception e) {
                     Log.i(TAG, "Error Loading:" + mImgIds[i]);
                     e.printStackTrace();
